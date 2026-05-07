@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "DocumentAnalyser"
 
     # CORS settings - can be set as comma-separated string in .env.
-    # Note: ignored entirely when DOCUMENT_LENS_MODE=desktop (see document_analyser/main.py),
+    # Note: ignored entirely when DOCUMENT_ANALYSER_MODE=desktop (see document_analyser/main.py),
     # which swaps in a permissive regex for embedded Electron use.
     ALLOWED_ORIGINS: str | list[str] = Field(
         default="http://localhost:5173,http://localhost:5174,http://localhost:3000",

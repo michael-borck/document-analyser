@@ -20,7 +20,7 @@ class TestHealthEndpoint:
         response = client.get("/health")
         data = response.json()
 
-        assert data["status"] == "healthy"
+        assert data["status"] == "ok"
 
     def test_health_returns_version(self, client: TestClient):
         """Health endpoint should return version information."""

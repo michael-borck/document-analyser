@@ -33,8 +33,8 @@ def main() -> None:
 def _main_serve(argv: list[str]) -> None:
     import argparse
     parser = argparse.ArgumentParser(prog="document-analyser serve", description="Start the HTTP server")
-    parser.add_argument("--port", type=int, default=int(os.getenv("DOCUMENT_LENS_PORT", "8000")))
-    parser.add_argument("--host", default=os.getenv("DOCUMENT_LENS_HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.getenv("DOCUMENT_ANALYSER_PORT", "8000")))
+    parser.add_argument("--host", default=os.getenv("DOCUMENT_ANALYSER_HOST", "127.0.0.1"))
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload (development only)")
     _cmd_serve(parser.parse_args(argv))
 

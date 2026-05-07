@@ -4,6 +4,7 @@ Multi-Modal Document Analysis Microservice
 """
 
 import os
+from importlib.metadata import version
 from typing import Any
 
 from fastapi import FastAPI
@@ -25,11 +26,15 @@ from document_analyser.core.config import settings
 
 limiter = Limiter(key_func=get_remote_address)
 
+# Sourced from pyproject.toml at install time so the FastAPI service version
+# always matches the installed package — no manual sync required.
+_VERSION = version("document-analyser")
+
 # Create FastAPI document_analyser
 document_analyser = FastAPI(
     title="DocumentAnalyser API",
     description="Document text and signal extraction (PDF, DOCX, PPTX, MD) for the analyser family",
-    version="0.1.1",
+    version=_VERSION,
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -40,7 +45,7 @@ document_analyser.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_
 # CORS middleware.
 #
 # Two profiles:
-#   - desktop mode (DOCUMENT_LENS_MODE=desktop): embedded in the document-lens
+#   - desktop mode (DOCUMENT_ANALYSER_MODE=desktop): embedded in the document-lens
 #     Electron app (the renamed document-lens-desktop). The backend only listens on 127.0.0.1, reachable only by
 #     the user's own processes, so we use a permissive regex to allow the
 #     Vite dev server (any localhost port), the packaged renderer's
@@ -49,7 +54,7 @@ document_analyser.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_
 #     local backend.
 #   - web mode (default): strict allowlist from ALLOWED_ORIGINS, credentials
 #     enabled. Used by docker-compose, web deployments, and shared hosting.
-if os.getenv("DOCUMENT_LENS_MODE") == "desktop":
+if os.getenv("DOCUMENT_ANALYSER_MODE") == "desktop":
     document_analyser.add_middleware(
         CORSMiddleware,
         allow_origin_regex=(
@@ -87,7 +92,7 @@ async def root() -> dict[str, Any]:
     return {
         "service": "DocumentAnalyser",
         "description": "Multi-Modal Document Analysis Microservice",
-        "version": "0.1.1",
+        "version": _VERSION,
         "status": "running",
         "endpoints": {
             "available": {

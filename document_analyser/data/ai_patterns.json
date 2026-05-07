@@ -1,0 +1,146 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2024-09-01",
+  "disclaimer": "AI detection patterns evolve rapidly. These indicators suggest possible AI generation but are not definitive proof. Both AI and human writers may use these patterns.",
+  "patterns": {
+    "ai_phrases": [
+      "in the realm of",
+      "delve into",
+      "in today's digital age",
+      "a testament to",
+      "in conclusion",
+      "a treasure trove of",
+      "in this article",
+      "a tapestry of",
+      "in the annals of",
+      "let's explore",
+      "cannot be overstated",
+      "significantly enhance",
+      "plays a crucial role",
+      "ever-evolving",
+      "harness the power of",
+      "it's important to note that",
+      "it's worth noting that",
+      "furthermore",
+      "moreover",
+      "navigate the complexities",
+      "at the heart of",
+      "dive deep into",
+      "unpack the",
+      "shed light on",
+      "paint a picture of"
+    ],
+    "ai_verbs": [
+      "elevate",
+      "explore",
+      "delve",
+      "foster",
+      "convey",
+      "navigate",
+      "employ",
+      "emerge",
+      "unlock",
+      "captivate",
+      "embrace",
+      "underscore",
+      "highlight",
+      "illuminate",
+      "amplify",
+      "leverage",
+      "harness",
+      "cultivate",
+      "streamline",
+      "revolutionize",
+      "transform",
+      "optimize",
+      "enhance",
+      "facilitate"
+    ],
+    "ai_adjectives": [
+      "comprehensive",
+      "robust",
+      "pivotal",
+      "diverse",
+      "meticulous",
+      "esteemed",
+      "whimsical",
+      "bespoke",
+      "commendable",
+      "inclusive",
+      "dynamic",
+      "seamless",
+      "innovative",
+      "cutting-edge",
+      "groundbreaking",
+      "revolutionary",
+      "unprecedented",
+      "paramount",
+      "quintessential",
+      "multifaceted",
+      "holistic",
+      "synergistic",
+      "transformative",
+      "compelling"
+    ],
+    "llm_artifacts": [
+      "here is",
+      "here's",
+      "i'd be happy to",
+      "i hope this helps",
+      "let me help you",
+      "would you like me to",
+      "i'll help you",
+      "i'll assist you",
+      "i can help with",
+      "i understand that",
+      "as an ai",
+      "as a language model",
+      "i cannot",
+      "i don't have access to",
+      "i apologize for",
+      "please note that",
+      "feel free to",
+      "don't hesitate to",
+      "let me know if"
+    ],
+    "structural_patterns": {
+      "bullet_indicators": ["•", "●", "○", "■", "□", "▪", "▫", "-", "*", "→"],
+      "numbered_list_pattern": "^\\d+\\.\\s",
+      "excessive_em_dash": "—",
+      "emoji_pattern": "[\\u{1F300}-\\u{1F9FF}]|[\\u{2600}-\\u{26FF}]|[\\u{2700}-\\u{27BF}]"
+    }
+  },
+  "thresholds": {
+    "ai_word_frequency": {
+      "high": 0.15,
+      "medium": 0.08,
+      "low": 0.03
+    },
+    "ai_phrase_density": {
+      "high": 5,
+      "medium": 3,
+      "low": 1
+    },
+    "em_dash_frequency": {
+      "high": 0.02,
+      "medium": 0.01,
+      "low": 0.005
+    },
+    "bullet_ratio": {
+      "high": 0.3,
+      "medium": 0.2,
+      "low": 0.1
+    },
+    "overall_risk": {
+      "high": 0.7,
+      "medium": 0.4,
+      "low": 0.2
+    }
+  },
+  "weights": {
+    "ai_words": 0.25,
+    "ai_phrases": 0.3,
+    "llm_artifacts": 0.35,
+    "structural_markers": 0.1
+  }
+}

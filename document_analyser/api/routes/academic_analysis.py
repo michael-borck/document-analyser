@@ -36,7 +36,7 @@ class AcademicAnalysisRequest(BaseModel):
     check_in_text: bool = True
 
 class AcademicAnalysisResponse(BaseModel):
-    service: str = "DocumentLens"
+    service: str = "DocumentAnalyser"
     version: str = "1.0.0"
     content_type: str = "academic"
     analysis: dict

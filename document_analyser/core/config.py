@@ -1,5 +1,5 @@
 """
-Configuration settings for DocumentLens API
+Configuration settings for DocumentAnalyser API
 """
 
 from typing import Any
@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     # App settings
     DEBUG: bool = False
     API_V1_STR: str = "/api"
-    PROJECT_NAME: str = "DocumentLens"
+    PROJECT_NAME: str = "DocumentAnalyser"
 
     # CORS settings - can be set as comma-separated string in .env.
     # Note: ignored entirely when DOCUMENT_LENS_MODE=desktop (see document_analyser/main.py),

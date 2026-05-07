@@ -119,7 +119,7 @@ class FileMetadata(BaseModel):
 
 
 class FileAnalysisResponse(BaseModel):
-    service: str = "DocumentLens"
+    service: str = "DocumentAnalyser"
     version: str = "1.0.0"
     files_processed: int
     analysis_type: str

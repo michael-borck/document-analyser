@@ -22,7 +22,7 @@ class TestTextAnalysisEndpoint:
         data = response.json()
 
         # Check top-level structure
-        assert data["service"] == "DocumentLens"
+        assert data["service"] == "DocumentAnalyser"
         assert data["version"] == "1.0.0"
         assert data["content_type"] == "text"
         assert "analysis" in data

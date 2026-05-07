@@ -23,7 +23,7 @@ class DOIResolver:
 
         # Request headers for CrossRef API
         self.headers = {
-            'User-Agent': 'DocumentLens/1.0.0 (https://github.com/michael-borck/document-lens; mailto:contact@example.com)',
+            'User-Agent': 'DocumentAnalyser/0.1.1 (https://github.com/michael-borck/document-analyser; mailto:contact@example.com)',
             'Accept': 'application/json'
         }
 

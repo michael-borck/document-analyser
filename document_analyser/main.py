@@ -1,5 +1,5 @@
 """
-DocumentLens FastAPI Service
+DocumentAnalyser FastAPI Service
 Multi-Modal Document Analysis Microservice
 """
 
@@ -27,9 +27,9 @@ limiter = Limiter(key_func=get_remote_address)
 
 # Create FastAPI document_analyser
 document_analyser = FastAPI(
-    title="DocumentLens API",
-    description="Australian Document Analysis Microservice - Transform any content into actionable insights",
-    version="1.0.0",
+    title="DocumentAnalyser API",
+    description="Document text and signal extraction (PDF, DOCX, PPTX, MD) for the analyser family",
+    version="0.1.1",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -41,7 +41,7 @@ document_analyser.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_
 #
 # Two profiles:
 #   - desktop mode (DOCUMENT_LENS_MODE=desktop): embedded in the document-lens
-#     Electron document_analyser. The backend only listens on 127.0.0.1, reachable only by
+#     Electron app (the renamed document-lens-desktop). The backend only listens on 127.0.0.1, reachable only by
 #     the user's own processes, so we use a permissive regex to allow the
 #     Vite dev server (any localhost port), the packaged renderer's
 #     file:// origin, and the null-origin fallback some Chromium versions
@@ -85,9 +85,9 @@ document_analyser.include_router(semantic_analysis.router, prefix="/semantic", t
 async def root() -> dict[str, Any]:
     """Root endpoint"""
     return {
-        "service": "DocumentLens",
+        "service": "DocumentAnalyser",
         "description": "Multi-Modal Document Analysis Microservice",
-        "version": "1.0.0",
+        "version": "0.1.1",
         "status": "running",
         "endpoints": {
             "available": {

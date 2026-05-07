@@ -53,7 +53,7 @@ class TestRootEndpoint:
         response = client.get("/")
         data = response.json()
 
-        assert data["service"] == "DocumentLens"
+        assert data["service"] == "DocumentAnalyser"
         assert data["status"] == "running"
 
     def test_root_lists_available_endpoints(self, client: TestClient):

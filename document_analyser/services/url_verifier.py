@@ -29,7 +29,7 @@ class URLVerifier:
 
         # Request headers
         self.headers = {
-            'User-Agent': 'DocumentLens/1.0.0 URL Verifier (https://github.com/michael-borck/document-lens)',
+            'User-Agent': 'DocumentAnalyser/0.1.1 URL Verifier (https://github.com/michael-borck/document-analyser)',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
             'Accept-Encoding': 'gzip, deflate',

@@ -1,5 +1,5 @@
 """
-Pytest configuration and shared fixtures for DocumentLens API tests.
+Pytest configuration and shared fixtures for DocumentAnalyser API tests.
 """
 
 import os

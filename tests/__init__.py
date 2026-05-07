@@ -1,1 +1,1 @@
-"""DocumentLens API Tests"""
+"""DocumentAnalyser API Tests"""

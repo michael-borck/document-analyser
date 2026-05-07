@@ -11,7 +11,7 @@ from document_analyser.models.schemas import NEREntity, NERResponse
 
 
 class NerAnalyzer:
-    """Wraps spaCy NER for use in DocumentLens."""
+    """Wraps spaCy NER for use in DocumentAnalyser."""
 
     def __init__(self, model: str = "en_core_web_sm") -> None:
         self.model_name = model

@@ -31,7 +31,7 @@ class TextAnalysisRequest(BaseModel):
 
 
 class TextAnalysisResponse(BaseModel):
-    service: str = "DocumentLens"
+    service: str = "DocumentAnalyser"
     version: str = "1.0.0"
     content_type: str = "text"
     analysis: dict

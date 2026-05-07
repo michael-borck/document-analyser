@@ -47,7 +47,7 @@ class TestFileUploadEndpoint:
         data = response.json()
 
         # Check top-level structure
-        assert data["service"] == "DocumentLens"
+        assert data["service"] == "DocumentAnalyser"
         assert data["version"] == "1.0.0"
         assert data["files_processed"] == 1
         assert data["analysis_type"] == "full"

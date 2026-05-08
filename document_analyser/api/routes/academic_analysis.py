@@ -3,6 +3,7 @@ Academic analysis endpoints - Citation, DOI, URL verification, and integrity che
 """
 
 import time
+from importlib.metadata import version
 from typing import Literal, cast
 
 from fastapi import APIRouter, HTTPException, Request
@@ -19,6 +20,10 @@ from document_analyser.services.url_verifier import URLVerifier
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+
+# Version sourced from pyproject.toml at install time so we don't drift
+# between code-declared and packaged versions.
+_VERSION = version("document-analyser")
 
 # Initialize academic services
 reference_extractor = ReferenceExtractor()
@@ -37,7 +42,7 @@ class AcademicAnalysisRequest(BaseModel):
 
 class AcademicAnalysisResponse(BaseModel):
     service: str = "DocumentAnalyser"
-    version: str = "1.0.0"
+    version: str = _VERSION
     content_type: str = "academic"
     analysis: dict
     processing_time: float

@@ -4,6 +4,7 @@ File processing endpoints - Enhanced document upload and analysis
 
 import base64
 import time
+from importlib.metadata import version
 from typing import Any
 
 from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile
@@ -24,6 +25,10 @@ from document_analyser.services.url_verifier import URLVerifier
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+
+# Version sourced from pyproject.toml at install time so we don't drift
+# between code-declared and packaged versions.
+_VERSION = version("document-analyser")
 
 # File type detection constants
 # Magic bytes signatures for supported file types
@@ -120,7 +125,7 @@ class FileMetadata(BaseModel):
 
 class FileAnalysisResponse(BaseModel):
     service: str = "DocumentAnalyser"
-    version: str = "1.0.0"
+    version: str = _VERSION
     files_processed: int
     analysis_type: str
     processing_time: float

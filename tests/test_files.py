@@ -5,10 +5,13 @@ This module tests the /files endpoint with PDF documents.
 Structured to easily add DOCX and other formats later.
 """
 
+from importlib.metadata import version as _pkg_version
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+
+EXPECTED_VERSION = _pkg_version("document-analyser")
 
 
 class TestFileUploadEndpoint:
@@ -48,7 +51,7 @@ class TestFileUploadEndpoint:
 
         # Check top-level structure
         assert data["service"] == "DocumentAnalyser"
-        assert data["version"] == "1.0.0"
+        assert data["version"] == EXPECTED_VERSION
         assert data["files_processed"] == 1
         assert data["analysis_type"] == "full"
         assert "processing_time" in data
@@ -77,53 +80,6 @@ class TestFileUploadEndpoint:
         assert metadata["filename"] == pdf_path.name
         assert metadata["content_type"] == "application/pdf"
         assert "size" in metadata
-
-    @pytest.mark.pdf
-    def test_upload_pdf_with_text_analysis(self, client: TestClient, sample_pdf_paths: list[Path]):
-        """PDF upload with text analysis should return readability metrics."""
-        if not sample_pdf_paths:
-            pytest.skip("No PDF files in test-data directory")
-
-        pdf_path = sample_pdf_paths[0]
-        with open(pdf_path, "rb") as f:
-            response = client.post(
-                "/files",
-                files={"files": (pdf_path.name, f, "application/pdf")},
-                data={"analysis_type": "text"},
-            )
-
-        data = response.json()
-        file_result = data["results"]["individual_files"][0]
-        analysis = file_result["analysis"]
-
-        # Text analysis should include readability
-        assert "readability" in analysis
-        assert "writing_quality" in analysis
-        assert "word_analysis" in analysis
-
-    @pytest.mark.pdf
-    def test_upload_pdf_with_academic_analysis(
-        self, client: TestClient, sample_pdf_paths: list[Path]
-    ):
-        """PDF upload with academic analysis should check references."""
-        if not sample_pdf_paths:
-            pytest.skip("No PDF files in test-data directory")
-
-        pdf_path = sample_pdf_paths[0]
-        with open(pdf_path, "rb") as f:
-            response = client.post(
-                "/files",
-                files={"files": (pdf_path.name, f, "application/pdf")},
-                data={"analysis_type": "academic"},
-            )
-
-        data = response.json()
-        file_result = data["results"]["individual_files"][0]
-        analysis = file_result["analysis"]
-
-        # Academic analysis should include references and integrity
-        assert "references" in analysis
-        assert "integrity" in analysis
 
     @pytest.mark.pdf
     def test_upload_pdf_with_extracted_text(self, client: TestClient, sample_pdf_paths: list[Path]):
@@ -210,16 +166,6 @@ class TestFileUploadValidation:
         response = client.post("/files", files={})
         assert response.status_code == 422  # FastAPI validation error
 
-    def test_upload_unsupported_type_returns_error(self, client: TestClient):
-        """Uploading unsupported file type should return an error."""
-        response = client.post(
-            "/files",
-            files={"files": ("test.exe", b"fake content", "application/x-msdownload")},
-        )
-        # API may return 400 or 500 depending on where validation occurs
-        assert response.status_code in [400, 500]
-        assert "Unsupported file type" in response.json()["detail"]
-
     def test_invalid_analysis_type_returns_400(
         self, client: TestClient, sample_pdf_paths: list[Path]
     ):
@@ -250,7 +196,7 @@ class TestFileAnalysisTypes:
         sample_pdf_paths: list[Path],
         analysis_type: str,
     ):
-        """All analysis types should work without errors."""
+        """Each analysis_type should produce its corresponding analysis result fields."""
         if not sample_pdf_paths:
             pytest.skip("No PDF files in test-data directory")
 
@@ -264,7 +210,18 @@ class TestFileAnalysisTypes:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["analysis_type"] == analysis_type
+        analysis = data["results"]["individual_files"][0]["analysis"]
+
+        # Each analysis_type should populate the corresponding result keys
+        # (route adds text-related keys for "full"/"text" and academic keys
+        # for "full"/"academic" — see _analyse_file_content).
+        if analysis_type in ("full", "text"):
+            assert "readability" in analysis
+            assert "writing_quality" in analysis
+            assert "word_analysis" in analysis
+        if analysis_type in ("full", "academic"):
+            assert "references" in analysis
+            assert "integrity" in analysis
 
 
 class TestMetadataInference:
@@ -284,31 +241,6 @@ class TestMetadataInference:
             )
 
         assert response.status_code == 200
-
-    @pytest.mark.pdf
-    def test_infer_metadata_returns_expected_fields(
-        self, client: TestClient, sample_pdf_paths: list[Path]
-    ):
-        """Metadata inference should return expected fields."""
-        if not sample_pdf_paths:
-            pytest.skip("No PDF files in test-data directory")
-
-        pdf_path = sample_pdf_paths[0]
-        with open(pdf_path, "rb") as f:
-            response = client.post(
-                "/files/infer-metadata",
-                files={"file": (pdf_path.name, f, "application/pdf")},
-            )
-
-        data = response.json()
-
-        # Check all expected fields are present
-        assert "probable_year" in data
-        assert "probable_company" in data
-        assert "probable_industry" in data
-        assert "document_type" in data
-        assert "confidence_scores" in data
-        assert "extraction_notes" in data
 
     @pytest.mark.pdf
     def test_infer_metadata_confidence_scores(

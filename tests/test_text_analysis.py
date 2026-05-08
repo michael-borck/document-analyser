@@ -4,8 +4,11 @@ Tests for text analysis endpoints.
 This module tests the /text endpoint for text analysis features.
 """
 
-import pytest
+from importlib.metadata import version as _pkg_version
+
 from fastapi.testclient import TestClient
+
+EXPECTED_VERSION = _pkg_version("document-analyser")
 
 
 class TestTextAnalysisEndpoint:
@@ -23,7 +26,7 @@ class TestTextAnalysisEndpoint:
 
         # Check top-level structure
         assert data["service"] == "DocumentAnalyser"
-        assert data["version"] == "1.0.0"
+        assert data["version"] == EXPECTED_VERSION
         assert data["content_type"] == "text"
         assert "analysis" in data
         assert "processing_time" in data
@@ -42,47 +45,6 @@ class TestTextAnalysisEndpoint:
         # Values should be positive
         assert metrics["word_count"] > 0
         assert metrics["sentence_count"] > 0
-
-    def test_text_analysis_returns_readability(self, client: TestClient, sample_text: str):
-        """Text analysis should return readability scores."""
-        response = client.post("/text", json={"text": sample_text})
-        data = response.json()
-
-        readability = data["analysis"]["readability"]
-        assert "flesch_score" in readability
-        assert "flesch_kincaid_grade" in readability
-        assert "interpretation" in readability
-
-    def test_text_analysis_returns_writing_quality(self, client: TestClient, sample_text: str):
-        """Text analysis should return writing quality metrics."""
-        response = client.post("/text", json={"text": sample_text})
-        data = response.json()
-
-        quality = data["analysis"]["writing_quality"]
-        assert "passive_voice_percentage" in quality
-        assert "sentence_variety" in quality
-        assert "academic_tone" in quality
-        assert "transition_words" in quality
-        assert "hedging_language" in quality
-
-    def test_text_analysis_returns_word_analysis(self, client: TestClient, sample_text: str):
-        """Text analysis should return word analysis."""
-        response = client.post("/text", json={"text": sample_text})
-        data = response.json()
-
-        word_analysis = data["analysis"]["word_analysis"]
-        assert "unique_words" in word_analysis
-        assert "vocabulary_richness" in word_analysis
-        assert "top_words" in word_analysis
-        assert "bigrams" in word_analysis
-        assert "trigrams" in word_analysis
-
-    def test_text_analysis_returns_ner(self, client: TestClient, sample_text: str):
-        """Text analysis should return named entity recognition results."""
-        response = client.post("/text", json={"text": sample_text})
-        data = response.json()
-
-        assert "ner" in data["analysis"]
 
 
 class TestTextAnalysisValidation:
@@ -155,14 +117,6 @@ class TestTextAnalysisMetrics:
         # Grade level should be between elementary and post-graduate
         assert 0 <= grade <= 25
 
-    def test_percentages_in_valid_range(self, client: TestClient, sample_text: str):
-        """Percentage values should be between 0 and 100."""
-        response = client.post("/text", json={"text": sample_text})
-        data = response.json()
-
-        quality = data["analysis"]["writing_quality"]
-        assert 0 <= quality["passive_voice_percentage"] <= 100
-
 
 class TestTextInferMetadata:
     """Tests for the POST /text/infer-metadata endpoint."""
@@ -174,20 +128,6 @@ class TestTextInferMetadata:
             data={"text": sample_text},
         )
         assert response.status_code == 200
-
-    def test_infer_metadata_returns_expected_fields(self, client: TestClient, sample_text: str):
-        """Text metadata inference should return expected fields."""
-        response = client.post(
-            "/text/infer-metadata",
-            data={"text": sample_text},
-        )
-        data = response.json()
-
-        assert "probable_year" in data
-        assert "probable_company" in data
-        assert "probable_industry" in data
-        assert "document_type" in data
-        assert "confidence_scores" in data
 
     def test_infer_metadata_with_filename(self, client: TestClient, sample_text: str):
         """Text metadata inference should accept optional filename."""

@@ -3,6 +3,7 @@ Text analysis endpoints - Core text metrics without academic features
 """
 
 import time
+from importlib.metadata import version
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
@@ -18,6 +19,10 @@ from document_analyser.core.config import settings
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
+# Version sourced from pyproject.toml at install time so we don't drift
+# between code-declared and packaged versions.
+_VERSION = version("document-analyser")
+
 # Initialize text analyzers only
 readability_analyzer = ReadabilityAnalyzer()
 writing_quality_analyzer = WritingQualityAnalyzer()
@@ -32,7 +37,7 @@ class TextAnalysisRequest(BaseModel):
 
 class TextAnalysisResponse(BaseModel):
     service: str = "DocumentAnalyser"
-    version: str = "1.0.0"
+    version: str = _VERSION
     content_type: str = "text"
     analysis: dict
     processing_time: float

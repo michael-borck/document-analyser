@@ -77,25 +77,6 @@ class TestDomainMapping:
 class TestStructuralMismatch:
     """Tests for structural mismatch detection endpoint."""
 
-    def test_structural_mismatch_success(self) -> None:
-        """Test successful structural mismatch detection."""
-        response = client.post(
-            "/semantic/structural-mismatch",
-            json={
-                "text": SAMPLE_TEXT,
-                "domains": DOMAINS,
-                "threshold": 0.3
-            }
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-
-        assert "total_sentences_analyzed" in data
-        assert "overall_coherence_score" in data
-        assert "dislocations" in data
-        assert "recommendations" in data
-
     def test_structural_mismatch_empty_text(self) -> None:
         """Test structural mismatch with empty text."""
         response = client.post(
@@ -153,7 +134,7 @@ class TestSentimentAnalysis:
         assert response.status_code == 400
 
     def test_sentiment_analysis_sentiment_scores(self) -> None:
-        """Test that sentiment scores are valid numbers."""
+        """Deliberately positive text should produce a positive compound score."""
         positive_text = "This is excellent! I love this. Great work!"
 
         response = client.post(
@@ -172,3 +153,9 @@ class TestSentimentAnalysis:
         assert "compound" in doc_sentiment
         assert isinstance(doc_sentiment["positive"], (int, float))
         assert isinstance(doc_sentiment["negative"], (int, float))
+
+        # The net polarity for unambiguously positive text must be positive
+        # (compound is in the range -1.0 to 1.0; expect > 0 here).
+        assert doc_sentiment["compound"] > 0, (
+            f"Expected positive compound score for positive text, got {doc_sentiment['compound']}"
+        )

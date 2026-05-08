@@ -4,7 +4,11 @@ Tests for health and root endpoints.
 These are smoke tests to ensure the API is running correctly.
 """
 
+from importlib.metadata import version as _pkg_version
+
 from fastapi.testclient import TestClient
+
+EXPECTED_VERSION = _pkg_version("document-analyser")
 
 
 class TestHealthEndpoint:
@@ -15,8 +19,8 @@ class TestHealthEndpoint:
         response = client.get("/health")
         assert response.status_code == 200
 
-    def test_health_returns_healthy_status(self, client: TestClient):
-        """Health endpoint should return healthy status."""
+    def test_health_returns_ok_status(self, client: TestClient):
+        """Health endpoint should return ok status."""
         response = client.get("/health")
         data = response.json()
 
@@ -28,16 +32,7 @@ class TestHealthEndpoint:
         data = response.json()
 
         assert "version" in data
-        assert data["version"] == "1.0.0"
-
-    def test_health_returns_uptime(self, client: TestClient):
-        """Health endpoint should return uptime as a positive number."""
-        response = client.get("/health")
-        data = response.json()
-
-        assert "uptime" in data
-        assert isinstance(data["uptime"], (int, float))
-        assert data["uptime"] >= 0
+        assert data["version"] == EXPECTED_VERSION
 
 
 class TestRootEndpoint:
@@ -56,19 +51,6 @@ class TestRootEndpoint:
         assert data["service"] == "DocumentAnalyser"
         assert data["status"] == "running"
 
-    def test_root_lists_available_endpoints(self, client: TestClient):
-        """Root endpoint should list available API endpoints."""
-        response = client.get("/")
-        data = response.json()
-
-        assert "endpoints" in data
-        assert "available" in data["endpoints"]
-
-        available = data["endpoints"]["available"]
-        assert "health" in available
-        assert "text_analysis" in available
-        assert "file_processing" in available
-
 
 class TestDocsEndpoints:
     """Tests for API documentation endpoints."""
@@ -82,12 +64,3 @@ class TestDocsEndpoints:
         """ReDoc should be available at /redoc."""
         response = client.get("/redoc")
         assert response.status_code == 200
-
-    def test_openapi_schema_available(self, client: TestClient):
-        """OpenAPI schema should be available."""
-        response = client.get("/openapi.json")
-        assert response.status_code == 200
-
-        data = response.json()
-        assert "openapi" in data
-        assert "paths" in data

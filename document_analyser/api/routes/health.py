@@ -3,6 +3,7 @@ Health check endpoints
 """
 
 import time
+from importlib.metadata import version
 
 from fastapi import APIRouter
 
@@ -13,6 +14,11 @@ router = APIRouter()
 # Application start time for uptime calculation
 START_TIME = time.time()
 
+# Version sourced from pyproject.toml at install time so we don't drift
+# between code-declared and packaged versions.
+_VERSION = version("document-analyser")
+
+
 @router.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
     """Health check endpoint"""
@@ -20,6 +26,6 @@ async def health_check() -> HealthResponse:
 
     return HealthResponse(
         status="ok",
-        version="1.0.0",
+        version=_VERSION,
         uptime=uptime
     )

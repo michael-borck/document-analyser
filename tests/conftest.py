@@ -36,7 +36,7 @@ async def async_client():
     """
     import httpx
 
-    transport = httpx.ASGITransport(document_analyser=document_analyser)  # type: ignore[arg-type]
+    transport = httpx.ASGITransport(app=document_analyser)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 

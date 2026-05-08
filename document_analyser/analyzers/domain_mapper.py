@@ -19,12 +19,22 @@ class DomainMapper:
         """Initialize domain mapper with sentence-transformers model."""
         self.model_name = model_name
         self.model = None
+        self._load_error: str | None = None
 
-        if SentenceTransformer:
+        if SentenceTransformer is None:
+            self._load_error = (
+                "sentence-transformers is not installed. "
+                "Install with: pip install sentence-transformers"
+            )
+        else:
             try:
                 self.model = SentenceTransformer(model_name)
-            except Exception:
-                self.model = None
+            except Exception as e:
+                self._load_error = (
+                    f"Failed to load SentenceTransformer model '{model_name}': {e!s}. "
+                    "This usually means missing model files, network issues during first load, "
+                    "or memory pressure when many ML libraries are loaded in the same process."
+                )
 
     def analyze(self, text: str, domains: list[str]) -> DomainMappingResponse:
         """
@@ -36,9 +46,18 @@ class DomainMapper:
 
         Returns:
             DomainMappingResponse with section-domain mappings
+
+        Raises:
+            RuntimeError: if the embedding model failed to load. Better to fail
+                loudly than silently return total_sections=0 (a real prior bug
+                that masked test pollution and made debugging painful).
         """
-        if not text.strip() or not self.model or not domains:
+        if not text.strip() or not domains:
             return DomainMappingResponse(total_sections=0)
+        if self.model is None:
+            raise RuntimeError(
+                f"DomainMapper unusable: {self._load_error or 'model not loaded'}"
+            )
 
         # 1. Detect sections using heuristic patterns
         sections = self._detect_sections(text)

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "document-analyser"
-version = "0.2.0"
+version = "0.2.1"
 description = "Multi-modal document analysis microservice — extracts text, readability, and structure from PDFs, DOCX, and more"
 readme = "README.md"
 requires-python = ">=3.11"

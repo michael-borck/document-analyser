@@ -1,9 +1,18 @@
-"""Tests for semantic analysis endpoints."""
+"""Tests for semantic analysis endpoints.
+
+Marked `slow` at the file level: these endpoints load real ML models
+(sentence-transformers for embeddings + transformers for sentiment), and
+combining them in one Python process intermittently segfaults on macOS.
+Run with `pytest -m slow` when exercising real model behaviour, e.g.
+before a release.
+"""
 
 import pytest
 from fastapi.testclient import TestClient
 
 from document_analyser.main import document_analyser
+
+pytestmark = pytest.mark.slow
 
 client = TestClient(document_analyser)
 

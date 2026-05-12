@@ -874,6 +874,13 @@ async def upload_files_by_path(
                 text, payload.analysis_type, "auto", True, True
             )
 
+            # Infer probable year / company / industry / document_type from
+            # the text content. Same logic the multipart /files/upload route
+            # exposes — surfacing it here so local-path callers (e.g. the
+            # Document Lens desktop app) get the year fallback when filename
+            # detection fails.
+            inferred = document_processor.infer_metadata_from_content(text, filename)
+
             # Build result
             file_result: dict[str, Any] = {
                 "filename": filename,
@@ -882,6 +889,7 @@ async def upload_files_by_path(
                 "text_length": len(text),
                 "metadata": file_metadata.model_dump(),
                 "analysis": file_analysis,
+                "inferred": inferred,
             }
 
             if payload.include_extracted_text and extracted_text_data:

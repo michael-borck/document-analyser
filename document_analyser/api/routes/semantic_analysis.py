@@ -1,7 +1,9 @@
 """Semantic analysis endpoints: domain mapping, structural mismatch, sentiment."""
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -14,6 +16,11 @@ from document_analyser.models.schemas import (
     GranularSentimentResponse,
     StructuralMismatchResponse,
 )
+
+try:
+    import numpy as np
+except ImportError:
+    np = None  # type: ignore
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -30,6 +37,40 @@ class DomainMappingRequest(BaseModel):
 
     text: str
     domains: list[str]
+
+
+class SimilarTermsRequest(BaseModel):
+    """Request for similar-terms ranking.
+
+    Embeds source_terms and candidate_terms with the same sentence-
+    transformers model the domain_mapper uses, then for each source
+    term returns the top_n candidates by cosine similarity.
+    """
+
+    source_terms: list[str]
+    candidate_terms: list[str]
+    top_n: int = Field(default=20, ge=1, le=200)
+    min_similarity: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class SimilarTermCandidate(BaseModel):
+    """One candidate-term match for a source term."""
+
+    candidate: str
+    similarity: float
+
+
+class SimilarTermsForSource(BaseModel):
+    """Top-N candidates for one source term."""
+
+    source: str
+    candidates: list[SimilarTermCandidate]
+
+
+class SimilarTermsResponse(BaseModel):
+    """Response: top-N candidates per source term."""
+
+    results: list[SimilarTermsForSource]
 
 
 class StructuralMismatchRequest(BaseModel):
@@ -199,3 +240,71 @@ async def analyze_domain_mapping_batch(
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Domain mapping failed: {e!s}") from e
     return results
+
+
+@router.post("/similar-terms", response_model=SimilarTermsResponse)
+@limiter.limit(settings.RATE_LIMIT)
+async def find_similar_terms(
+    request: Request, req: SimilarTermsRequest
+) -> SimilarTermsResponse:
+    """
+    Find candidate terms semantically similar to source terms.
+
+    Embeds source_terms and candidate_terms with the sentence-transformers
+    model the domain_mapper uses, then for each source term returns the
+    top_n candidates by cosine similarity (above min_similarity).
+
+    Designed for the synonym-discovery flow in Document Lens: source =
+    keywords from a curated list, candidates = n-grams extracted from
+    the user's corpus. Returns ranked, model-judged synonym candidates
+    the user can accept or reject.
+    """
+    if not req.source_terms:
+        raise HTTPException(status_code=400, detail="source_terms cannot be empty")
+    if not req.candidate_terms:
+        raise HTTPException(status_code=400, detail="candidate_terms cannot be empty")
+    if domain_mapper.model is None or np is None:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Embedding model unavailable: {domain_mapper._load_error or 'model not loaded'}"
+        )
+
+    try:
+        # Embed both lists once. Encoding is the bulk of the cost; a single
+        # call per list amortises model warm-up.
+        source_embeddings = domain_mapper.model.encode(req.source_terms)
+        candidate_embeddings = domain_mapper.model.encode(req.candidate_terms)
+
+        # Normalise both matrices for cosine similarity = dot product.
+        source_norms = source_embeddings / np.linalg.norm(source_embeddings, axis=1, keepdims=True)
+        candidate_norms = candidate_embeddings / np.linalg.norm(candidate_embeddings, axis=1, keepdims=True)
+
+        # Similarity matrix: shape (n_sources, n_candidates).
+        sims = np.dot(source_norms, candidate_norms.T)
+
+        results: list[SimilarTermsForSource] = []
+        for i, source in enumerate(req.source_terms):
+            row = sims[i]
+            # Indices of the top-N candidates (sorted desc).
+            ranked_indices: Any = np.argsort(-row)[: req.top_n]
+            candidates: list[SimilarTermCandidate] = []
+            for idx in ranked_indices:
+                score = float(row[idx])
+                if score < req.min_similarity:
+                    continue
+                # Skip exact matches (a keyword finding itself in the
+                # candidate list isn't a useful synonym).
+                if req.candidate_terms[idx].lower() == source.lower():
+                    continue
+                candidates.append(SimilarTermCandidate(
+                    candidate=req.candidate_terms[idx],
+                    similarity=score,
+                ))
+            results.append(SimilarTermsForSource(source=source, candidates=candidates))
+
+        return SimilarTermsResponse(results=results)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Similar-terms ranking failed: {e!s}"
+        ) from e

@@ -21,6 +21,11 @@ def main() -> None:
         _main_serve(sys.argv[2:])
         return
 
+    if len(sys.argv) > 1 and sys.argv[1] == "manifest":
+        from document_analyser.manifest import MANIFEST
+        print(json.dumps(MANIFEST, indent=2))
+        return
+
     parser = argparse.ArgumentParser(
         prog="document-analyser",
         description="Extract text and readability metrics from documents",
@@ -88,16 +93,9 @@ def _cmd_analyse(args) -> None:
 
 
 def _extract_text(path: Path, suffix: str) -> str:
-    if suffix == ".pdf":
-        import pdfplumber
-        with pdfplumber.open(path) as pdf:
-            return "\n\n".join(
-                page.extract_text() or "" for page in pdf.pages
-            ).strip()
-    else:
-        from markitdown import MarkItDown
-        result = MarkItDown().convert(str(path))
-        return result.text_content.strip()
+    # Canonical extractor: the single home for binary -> text in the family.
+    from document_analyser.extraction import extract_text
+    return extract_text(path)
 
 
 def _cmd_serve(args) -> None:

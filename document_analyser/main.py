@@ -86,6 +86,13 @@ document_analyser.include_router(advanced_text.router, tags=["advanced-text"])
 document_analyser.include_router(semantic_analysis.router, prefix="/semantic", tags=["semantic-analysis"])
 
 
+@document_analyser.get("/manifest")
+async def manifest() -> dict[str, Any]:
+    """Capability manifest consumed by auto-analyser for routing."""
+    from document_analyser.manifest import MANIFEST
+    return MANIFEST
+
+
 @document_analyser.get("/")
 async def root() -> dict[str, Any]:
     """Root endpoint"""

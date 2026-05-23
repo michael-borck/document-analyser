@@ -52,18 +52,6 @@ async def analyse(file: UploadFile = File(...)) -> dict[str, Any]:
 
 
 def _extract(content: bytes, suffix: str, filename: str) -> str:
-    if suffix == ".pdf":
-        import pdfplumber
-        import io
-        with pdfplumber.open(io.BytesIO(content)) as pdf:
-            return "\n\n".join(page.extract_text() or "" for page in pdf.pages).strip()
-
-    # markitdown needs a real file path
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-        tmp.write(content)
-        tmp_path = tmp.name
-    try:
-        from markitdown import MarkItDown
-        return MarkItDown().convert(tmp_path).text_content.strip()
-    finally:
-        Path(tmp_path).unlink(missing_ok=True)
+    # Canonical extractor: the single home for binary -> text in the family.
+    from document_analyser.extraction import extract_text_from_bytes
+    return extract_text_from_bytes(content, suffix)

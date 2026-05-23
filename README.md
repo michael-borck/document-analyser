@@ -2,7 +2,7 @@
 
 Extracts text from documents and returns readability metrics, word counts, and structural information. Accepts PDF, DOCX, PPTX, and plain text formats.
 
-Part of the [analyser family](#the-analyser-family).
+Part of the [analyser family](https://github.com/michael-borck/lens-analysers).
 
 ## Install
 

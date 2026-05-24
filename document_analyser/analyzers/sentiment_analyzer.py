@@ -41,6 +41,14 @@ class GranularSentimentAnalyzer:
                     model=model_name,
                     device=-1,  # CPU for PyInstaller compatibility
                 )
+                # macOS/arm64: from_pretrained hands back mmap-backed safetensors
+                # weight views; torch's GEMM hard-crashes (SIGBUS, exit 138) while
+                # paging them in during the first forward pass. Cloning each
+                # parameter copies the weights onto the heap, which avoids the
+                # fault. (sentence-transformers is unaffected — it materialises
+                # weights differently.) See INTEGRATION-NOTES.md.
+                for param in self.sentiment_pipeline.model.parameters():
+                    param.data = param.data.clone()
             except Exception:
                 self.sentiment_pipeline = None
 

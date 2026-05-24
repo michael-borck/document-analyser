@@ -74,6 +74,9 @@ class DocumentAnalysis(BaseModel):
     paragraph_count: int
     flesch_score: float
     flesch_kincaid_grade: float
+    gunning_fog: float = 0.0
+    smog_index: float = 0.0
+    automated_readability_index: float = 0.0
 
 
 class WritingQuality(BaseModel):

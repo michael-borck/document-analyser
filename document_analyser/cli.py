@@ -70,7 +70,7 @@ def _cmd_analyse(args) -> None:
         "paragraph_count": analysis.paragraph_count,
         "text": text,
         "readability": {
-            "flesch_reading_ease": analysis.flesch_reading_ease,
+            "flesch_reading_ease": analysis.flesch_score,
             "flesch_kincaid_grade": analysis.flesch_kincaid_grade,
             "gunning_fog": analysis.gunning_fog,
             "smog_index": analysis.smog_index,

@@ -52,10 +52,16 @@ class ReadabilityAnalyzer:
         if textstat:
             flesch_score = textstat.flesch_reading_ease(text)
             flesch_kincaid_grade = textstat.flesch_kincaid_grade(text)
+            gunning_fog = textstat.gunning_fog(text)
+            smog_index = textstat.smog_index(text)
+            automated_readability_index = textstat.automated_readability_index(text)
         else:
-            # Fallback implementation
+            # Fallback implementation (advanced indices need textstat; default to 0.0)
             flesch_score = self._calculate_flesch_score(text, word_count, sentence_count)
             flesch_kincaid_grade = self._calculate_flesch_kincaid_grade(text, word_count, sentence_count)
+            gunning_fog = 0.0
+            smog_index = 0.0
+            automated_readability_index = 0.0
 
         return DocumentAnalysis(
             word_count=word_count,
@@ -63,7 +69,10 @@ class ReadabilityAnalyzer:
             avg_words_per_sentence=round(avg_words_per_sentence, 1),
             paragraph_count=paragraph_count,
             flesch_score=round(flesch_score, 1),
-            flesch_kincaid_grade=round(flesch_kincaid_grade, 1)
+            flesch_kincaid_grade=round(flesch_kincaid_grade, 1),
+            gunning_fog=round(gunning_fog, 1),
+            smog_index=round(smog_index, 1),
+            automated_readability_index=round(automated_readability_index, 1),
         )
 
     def _empty_analysis(self) -> DocumentAnalysis:

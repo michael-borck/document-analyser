@@ -10,11 +10,11 @@ before a release.
 import pytest
 from fastapi.testclient import TestClient
 
-from document_analyser.main import document_analyser
+from document_analyser.api import app
 
 pytestmark = pytest.mark.slow
 
-client = TestClient(document_analyser)
+client = TestClient(app)
 
 SAMPLE_TEXT = """
 INTRODUCTION

@@ -4,22 +4,12 @@ document-analyser is auto-routable: its file extensions imply the analysis.
 """
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError, version
+from lens_contract import make_manifest
 
-
-def _version() -> str:
-    try:
-        return version("document-analyser")
-    except PackageNotFoundError:
-        return "0.0.0"
-
-
-MANIFEST: dict = {
-    "name": "document-analyser",
-    "version": _version(),
-    "role": "analyser",
-    "accepts": ["document", "prose"],
-    "extensions": [".pdf", ".docx", ".pptx", ".txt", ".md", ".qmd", ".rst"],
-    "auto_routable": True,
-    "produces": "DocumentAnalysis",
-}
+MANIFEST = make_manifest(
+    name="document-analyser",
+    accepts=["document", "prose"],
+    extensions=[".pdf", ".docx", ".pptx", ".txt", ".md", ".qmd", ".rst"],
+    auto_routable=True,
+    produces="DocumentAnalysis",
+)

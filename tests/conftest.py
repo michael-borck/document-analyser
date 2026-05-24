@@ -12,7 +12,7 @@ os.environ["RATE_LIMIT"] = "1000/minute"
 import pytest
 from fastapi.testclient import TestClient
 
-from document_analyser.main import document_analyser
+from document_analyser.api import app
 
 
 # === Test Client Fixtures ===
@@ -24,7 +24,7 @@ def client() -> Generator[TestClient, None, None]:
     Provides a FastAPI TestClient for the entire test session.
     Uses session scope for efficiency - the document_analyser is only initialized once.
     """
-    with TestClient(document_analyser) as test_client:
+    with TestClient(app) as test_client:
         yield test_client
 
 
@@ -36,7 +36,7 @@ async def async_client():
     """
     import httpx
 
-    transport = httpx.ASGITransport(app=document_analyser)
+    transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 

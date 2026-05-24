@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "document-analyser"
-version = "0.4.0"
+version = "0.5.0"
 description = "Multi-modal document analysis microservice — extracts text, readability, and structure from PDFs, DOCX, and more"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -21,12 +21,13 @@ classifiers = [
 ]
 dependencies = [
     # Core service (required for the package to import and serve)
+    "lens-contract>=0.2.0",  # manifest + /health + /manifest + CORS scaffolding
     "fastapi>=0.109.0",
     "uvicorn>=0.27.0",
     "python-multipart>=0.0.6",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.0.0",
-    "slowapi>=0.1.9",
+    "slowapi>=0.1.9",  # per-route rate limiting (kept; not via lens-contract)
     "httpx>=0.26.0",
     # Text extraction
     "pdfplumber>=0.10.3",
@@ -57,6 +58,11 @@ dev = [
 full = [
     "document-analyser[nlp]",
 ]
+
+# Local dev: resolve lens-contract from the sibling checkout. uv strips this from
+# the published wheel, which keeps the plain `lens-contract>=0.2.0` PyPI pin.
+[tool.uv.sources]
+lens-contract = { path = "../lens-contract", editable = true }
 
 [project.scripts]
 document-analyser = "document_analyser.cli:main"

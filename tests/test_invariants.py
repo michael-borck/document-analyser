@@ -23,7 +23,7 @@ def test_package_imports_cleanly() -> None:
     error, circular import, etc.).
     """
     import document_analyser  # noqa: F401
-    from document_analyser.main import document_analyser as app  # noqa: F401
+    from document_analyser.api import app  # noqa: F401
 
 
 def test_health_version_matches_installed_package() -> None:
@@ -34,7 +34,7 @@ def test_health_version_matches_installed_package() -> None:
     string. Pin the route to importlib.metadata and verify it stays
     pinned.
     """
-    from document_analyser.main import document_analyser as app
+    from document_analyser.api import app
 
     client = TestClient(app)
     response = client.get("/health")
@@ -44,7 +44,7 @@ def test_health_version_matches_installed_package() -> None:
 
 def test_root_version_matches_installed_package() -> None:
     """/root must also report the installed package version (same drift trap)."""
-    from document_analyser.main import document_analyser as app
+    from document_analyser.api import app
 
     client = TestClient(app)
     response = client.get("/")

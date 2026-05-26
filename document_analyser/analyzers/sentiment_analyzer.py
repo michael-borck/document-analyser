@@ -63,7 +63,13 @@ class GranularSentimentAnalyzer:
             GranularSentimentResponse with multi-level sentiment analysis
         """
         if not text.strip() or not self.sentiment_pipeline:
-            return GranularSentimentResponse(total_sentences=0)
+            # No text, or the transformer model isn't available (e.g. the optional
+            # [nlp] extra isn't installed). Return a VALID neutral result rather
+            # than an incomplete one — document_sentiment is required by the model.
+            return GranularSentimentResponse(
+                document_sentiment=SentimentScore(),
+                total_sentences=0,
+            )
 
         # 1. Detect sections
         sections = self._detect_sections(text)

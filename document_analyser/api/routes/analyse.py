@@ -34,7 +34,7 @@ async def analyse(file: UploadFile = File(...)) -> dict[str, Any]:
     from document_analyser.analyzers.readability import ReadabilityAnalyzer
     analysis = ReadabilityAnalyzer().analyze(text)
 
-    return {
+    response: dict[str, Any] = {
         "filename": filename,
         "format": suffix.lstrip("."),
         "file_size": len(content),
@@ -49,6 +49,18 @@ async def analyse(file: UploadFile = File(...)) -> dict[str, Any]:
             "automated_readability_index": analysis.automated_readability_index,
         },
     }
+
+    # Additive: .pptx gets a slide-design block. python-pptx reads the deck
+    # structure (slides, titles, layouts, images, bullets) that markitdown's
+    # text extraction discards.
+    if suffix == ".pptx":
+        try:
+            from document_analyser.analyzers.slide_design import analyse_pptx
+            response["slide_design"] = analyse_pptx(content).to_dict()
+        except Exception as e:
+            response["slide_design_error"] = str(e)
+
+    return response
 
 
 def _extract(content: bytes, suffix: str, filename: str) -> str:

@@ -72,6 +72,15 @@ def _cmd_analyse(args) -> None:
         },
     }
 
+    # Additive: .pptx gets a slide-design block on top of prose/readability.
+    # The text-only extraction can't see slide structure / images / layouts.
+    if suffix == ".pptx":
+        try:
+            from document_analyser.analyzers.slide_design import analyse_pptx
+            result["slide_design"] = analyse_pptx(path).to_dict()
+        except Exception as e:
+            result["slide_design_error"] = str(e)
+
     if args.as_json:
         print(json.dumps(result, indent=2, default=str))
         return
@@ -84,6 +93,24 @@ def _cmd_analyse(args) -> None:
     r = result["readability"]
     print(f"Flesch:      {r['flesch_reading_ease']:.1f} (grade {r['flesch_kincaid_grade']:.1f})")
     print(f"Gunning Fog: {r['gunning_fog']:.1f}")
+    sd = result.get("slide_design")
+    if sd:
+        print()
+        print("Slide design:")
+        print(f"  slides:           {sd['slide_count']}")
+        titled = int(round(sd['title_coverage'] * sd['slide_count']))
+        print(f"  titled:           {titled}/{sd['slide_count']}  ({sd['title_coverage']:.0%} coverage)")
+        print(f"  avg words/slide:  {sd['avg_words_per_slide']:.1f}  (max {sd['max_words_per_slide']})")
+        print(f"  avg images/slide: {sd['avg_images_per_slide']:.2f}  ({sd['total_images']} total)")
+        print(f"  max bullet depth: {sd['max_bullet_depth']}")
+        print(f"  layouts used:     {sd['distinct_layouts']}  ({', '.join(sd['layout_names'])})")
+        if sd['empty_slides']:
+            print(f"  empty slides:     {sd['empty_slides']}")
+        if sd['text_overloaded_slides']:
+            print(f"  overloaded (>80 words): {sd['text_overloaded_slides']} slide(s)")
+    elif result.get("slide_design_error"):
+        print()
+        print(f"Slide design: error — {result['slide_design_error']}")
 
 
 def _extract_text(path: Path, suffix: str) -> str:

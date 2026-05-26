@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "document-analyser"
-version = "0.5.1"
+version = "0.6.0"
 description = "Multi-modal document analysis microservice — extracts text, readability, and structure from PDFs, DOCX, and more"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -33,6 +33,8 @@ dependencies = [
     "pdfplumber>=0.10.3",
     "pypdf>=4.0.0",
     "markitdown[docx,pptx,xlsx]>=0.1.0",
+    # Slide-design analysis (deck structure that markitdown's text path discards)
+    "python-pptx>=0.6.21",
     # Basic text analysis
     "textstat>=0.7.3",
     "nltk>=3.8.0",

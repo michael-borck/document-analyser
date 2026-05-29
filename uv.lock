@@ -617,7 +617,7 @@ wheels = [
 
 [[package]]
 name = "document-analyser"
-version = "0.5.0"
+version = "0.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
@@ -631,6 +631,7 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pypdf" },
     { name = "python-multipart" },
+    { name = "python-pptx" },
     { name = "slowapi" },
     { name = "textstat" },
     { name = "uvicorn" },
@@ -670,6 +671,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
     { name = "python-multipart", specifier = ">=0.0.6" },
+    { name = "python-pptx", specifier = ">=0.6.21" },
     { name = "sentence-transformers", marker = "extra == 'nlp'", specifier = ">=2.5.0" },
     { name = "slowapi", specifier = ">=0.1.9" },
     { name = "spacy", marker = "extra == 'nlp'", specifier = ">=3.7.0" },
@@ -914,7 +916,7 @@ wheels = [
 
 [[package]]
 name = "lens-contract"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "../lens-contract" }
 dependencies = [
     { name = "fastapi" },

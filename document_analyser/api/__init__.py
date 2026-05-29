@@ -11,7 +11,7 @@ The FastAPI instance lives here (the `api` package's __init__) rather than an
 from typing import Any
 
 from fastapi import FastAPI
-from lens_contract import add_contract_routes, add_cors
+from lens_contract import add_auth, add_contract_routes, add_cors
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -46,6 +46,11 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # ty
 
 # GET /health and GET /manifest (the family contract, via lens-contract).
 add_contract_routes(app, MANIFEST)
+# Optional bearer-token auth — no-op unless DOCUMENT_ANALYSER_AUTH_TOKEN is set.
+# The desktop host (document-lens) generates a per-launch token, passes it via
+# this env var, and sends it as `Authorization: Bearer …`; /health and /manifest
+# stay open. Called BEFORE add_cors so CORS remains the outermost middleware.
+add_auth(app, env_prefix="DOCUMENT_ANALYSER")
 # CORS — env-driven: DOCUMENT_ANALYSER_MODE=desktop (Electron) or DOCUMENT_ANALYSER_ALLOWED_ORIGINS.
 add_cors(app, env_prefix="DOCUMENT_ANALYSER")
 

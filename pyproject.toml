@@ -51,6 +51,12 @@ nlp = [
     "spacy>=3.7.0",
     "transformers>=4.36.0",
 ]
+# Document embedding via the family's shared helper (one pinned model so the
+# vector is comparable across members — for cross-artefact + distinctiveness
+# signals). Opt-in: without it, `AnalysisResults.embedding` is simply None.
+embeddings = [
+    "lens-embed[text]>=0.1.1",
+]
 dev = [
     "pytest>=8.3.0",
     "pytest-cov>=5.0.0",
@@ -59,12 +65,14 @@ dev = [
 # Convenience: `pip install document-analyser[full]` installs everything.
 full = [
     "document-analyser[nlp]",
+    "document-analyser[embeddings]",
 ]
 
-# Local dev: resolve lens-contract from the sibling checkout. uv strips this from
-# the published wheel, which keeps the plain `lens-contract>=0.2.0` PyPI pin.
+# Local dev: resolve family siblings from local checkouts. uv strips these from
+# the published wheel, which keeps the plain PyPI pins.
 [tool.uv.sources]
 lens-contract = { path = "../lens-contract", editable = true }
+lens-embed = { path = "../lens-embed", editable = true }
 
 [project.scripts]
 document-analyser = "document_analyser.cli:main"

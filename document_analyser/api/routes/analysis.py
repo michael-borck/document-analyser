@@ -8,6 +8,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
+from document_analyser.analyzers.embedding import embed_document
 from document_analyser.analyzers.integrity_checker import IntegrityChecker
 from document_analyser.analyzers.readability import ReadabilityAnalyzer
 from document_analyser.analyzers.word_analysis import WordAnalyzer
@@ -153,6 +154,9 @@ async def analyze_documents(  # type: ignore[no-untyped-def]
                 document_names, all_texts, references
             )
 
+        # Document-level embedding (opt-in via the `embeddings` extra; None otherwise)
+        embedding = embed_document(combined_text)
+
         # Calculate processing time
         processing_time = time.time() - start_time
 
@@ -164,7 +168,8 @@ async def analyze_documents(  # type: ignore[no-untyped-def]
             word_analysis=word_analysis,
             comparison=comparison,
             processing_time=processing_time,
-            file_count=len(files)
+            file_count=len(files),
+            embedding=embedding,
         )
 
     except Exception as e:

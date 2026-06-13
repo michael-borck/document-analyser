@@ -109,6 +109,11 @@ class AnalysisResults(BaseModel):
     comparison: list[DocumentComparison] | None = None
     processing_time: float
     file_count: int
+    # Pooled, L2-normalised document vector from the family's shared embedder
+    # (lens-embed, pinned all-MiniLM-L6-v2). Comparable across members — feeds
+    # cross-artefact and distinctiveness signals downstream. None unless the
+    # `embeddings` extra is installed.
+    embedding: list[float] | None = None
 
 
 # Page-level text extraction models

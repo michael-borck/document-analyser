@@ -44,42 +44,13 @@ def _cmd_analyse(args) -> None:
         print(f"Error: file not found: {path}", file=sys.stderr)
         sys.exit(1)
 
-    suffix = path.suffix.lower()
+    from document_analyser.analysis import analyse_document
 
     try:
-        text = _extract_text(path, suffix)
+        result = analyse_document(path)
     except Exception as e:
-        print(f"Error: could not extract text: {e}", file=sys.stderr)
+        print(f"Error: could not analyse document: {e}", file=sys.stderr)
         sys.exit(1)
-
-    from document_analyser.analyzers.readability import ReadabilityAnalyzer
-    analysis = ReadabilityAnalyzer().analyze(text)
-
-    result = {
-        "format": suffix.lstrip("."),
-        "file_path": str(path.resolve()),
-        "file_size": path.stat().st_size,
-        "word_count": analysis.word_count,
-        "sentence_count": analysis.sentence_count,
-        "paragraph_count": analysis.paragraph_count,
-        "text": text,
-        "readability": {
-            "flesch_reading_ease": analysis.flesch_score,
-            "flesch_kincaid_grade": analysis.flesch_kincaid_grade,
-            "gunning_fog": analysis.gunning_fog,
-            "smog_index": analysis.smog_index,
-            "automated_readability_index": analysis.automated_readability_index,
-        },
-    }
-
-    # Additive: .pptx gets a slide-design block on top of prose/readability.
-    # The text-only extraction can't see slide structure / images / layouts.
-    if suffix == ".pptx":
-        try:
-            from document_analyser.analyzers.slide_design import analyse_pptx
-            result["slide_design"] = analyse_pptx(path).to_dict()
-        except Exception as e:
-            result["slide_design_error"] = str(e)
 
     if args.as_json:
         print(json.dumps(result, indent=2, default=str))
@@ -111,12 +82,6 @@ def _cmd_analyse(args) -> None:
     elif result.get("slide_design_error"):
         print()
         print(f"Slide design: error — {result['slide_design_error']}")
-
-
-def _extract_text(path: Path, suffix: str) -> str:
-    # Canonical extractor: the single home for binary -> text in the family.
-    from document_analyser.extraction import extract_text
-    return extract_text(path)
 
 
 if __name__ == "__main__":

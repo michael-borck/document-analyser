@@ -83,6 +83,13 @@ def _cmd_analyse(args) -> None:
         print()
         print(f"Slide design: error — {result['slide_design_error']}")
 
+    ai = result.get("ai_tells")
+    if ai and ai.get("flags"):
+        print()
+        print("AI-writing tells (advisory — read closer, not pass/fail):")
+        for f in ai["flags"]:
+            print(f"  [{f['severity']}] {f['description']}")
+
 
 if __name__ == "__main__":
     main()

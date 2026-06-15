@@ -42,6 +42,15 @@ def analyse_document(path: str | Path) -> dict:
         },
     }
 
+    # Additive: AI-writing-tell signals (emojis, em-dashes, adverb ratio, …) —
+    # advisory flags to read the document more closely, never fatal.
+    try:
+        from .analyzers.ai_tells import AiTellsAnalyzer
+
+        result["ai_tells"] = AiTellsAnalyzer().analyze(text)
+    except Exception as e:  # noqa: BLE001 - surfaced as a soft field, never fatal
+        result["ai_tells_error"] = str(e)
+
     # Additive: .pptx gets a slide-design block on top of prose/readability.
     if suffix == ".pptx":
         try:

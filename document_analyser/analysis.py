@@ -24,23 +24,38 @@ def analyse_document(path: str | Path) -> dict:
 
     from .analyzers.readability import ReadabilityAnalyzer
 
-    analysis = ReadabilityAnalyzer().analyze(text)
+    # Readability is a soft signal layered on top of the canonical extraction.
+    # It must never abort extraction — a missing NLTK resource (e.g. cmudict on
+    # a packaged/offline build) or any textstat hiccup degrades to an empty
+    # readability block, exactly like ai_tells / slide_design below.
     result: dict = {
         "format": suffix.lstrip("."),
         "file_path": str(path.resolve()),
         "file_size": path.stat().st_size,
-        "word_count": analysis.word_count,
-        "sentence_count": analysis.sentence_count,
-        "paragraph_count": analysis.paragraph_count,
         "text": text,
-        "readability": {
-            "flesch_reading_ease": analysis.flesch_score,
-            "flesch_kincaid_grade": analysis.flesch_kincaid_grade,
-            "gunning_fog": analysis.gunning_fog,
-            "smog_index": analysis.smog_index,
-            "automated_readability_index": analysis.automated_readability_index,
-        },
     }
+    try:
+        analysis = ReadabilityAnalyzer().analyze(text)
+        result.update(
+            word_count=analysis.word_count,
+            sentence_count=analysis.sentence_count,
+            paragraph_count=analysis.paragraph_count,
+            readability={
+                "flesch_reading_ease": analysis.flesch_score,
+                "flesch_kincaid_grade": analysis.flesch_kincaid_grade,
+                "gunning_fog": analysis.gunning_fog,
+                "smog_index": analysis.smog_index,
+                "automated_readability_index": analysis.automated_readability_index,
+            },
+        )
+    except Exception as e:  # noqa: BLE001 - readability is advisory, never fatal
+        result.update(
+            word_count=0,
+            sentence_count=0,
+            paragraph_count=0,
+            readability={},
+            readability_error=str(e),
+        )
 
     # Additive: AI-writing-tell signals (emojis, em-dashes, adverb ratio, …) —
     # advisory flags to read the document more closely, never fatal.

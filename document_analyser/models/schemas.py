@@ -221,6 +221,14 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     uptime: float
+    # Embedding-model readiness. The semantic features (domain mapping /
+    # classification, similar-terms, structural mismatch) all depend on the
+    # sentence-transformers model, which is loaded once at startup and can
+    # fail (missing bundled weights, memory pressure). Surfacing it here lets
+    # the desktop app tell the user "model unavailable — restart the backend"
+    # instead of reporting every document as a generic failure.
+    embedding_model_loaded: bool = True
+    embedding_model_error: str | None = None
 
 
 class ErrorResponse(BaseModel):

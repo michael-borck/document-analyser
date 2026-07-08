@@ -9,11 +9,28 @@ try:
     from nltk import download
     from nltk.tokenize import sent_tokenize
 
-    # Download required NLTK data
-    try:
-        sent_tokenize("test")
-    except LookupError:
-        download('punkt')
+    # Ensure the NLTK resources our readability metrics rely on are present.
+    # `punkt` powers sentence tokenisation; `cmudict` is what textstat uses
+    # for syllable counting (Flesch/SMOG/etc.). In a packaged, offline build
+    # these must be bundled — the download() calls below are only a best-effort
+    # fallback for source/dev runs and MUST NOT raise at import time (a clean
+    # offline machine can't fetch them, and that's fine: analyze() degrades
+    # gracefully rather than failing extraction). See analyze() for the guard.
+    def _ensure_nltk(resource: str, probe) -> None:
+        try:
+            probe()
+        except LookupError:
+            try:
+                download(resource, quiet=True)
+            except Exception:  # noqa: BLE001 - offline/clean box: fall back at use time
+                pass
+        except Exception:  # noqa: BLE001 - never let resource setup abort import
+            pass
+
+    from nltk.data import find as _nltk_find
+
+    _ensure_nltk('punkt', lambda: sent_tokenize("test"))
+    _ensure_nltk('cmudict', lambda: _nltk_find('corpora/cmudict'))
 
 except ImportError:
     textstat = None
@@ -48,14 +65,26 @@ class ReadabilityAnalyzer:
 
         avg_words_per_sentence = word_count / max(sentence_count, 1)
 
-        # Readability scores
+        # Readability scores. textstat's syllable-based metrics need the NLTK
+        # `cmudict` corpus; if it isn't available (e.g. a packaged build that
+        # didn't bundle it, or an offline first run) textstat raises a
+        # LookupError. Readability is a soft signal — never let a missing
+        # resource abort extraction. Fall back to the pure-Python estimates.
+        flesch_score = flesch_kincaid_grade = 0.0
+        gunning_fog = smog_index = automated_readability_index = 0.0
+        used_textstat = False
         if textstat:
-            flesch_score = textstat.flesch_reading_ease(text)
-            flesch_kincaid_grade = textstat.flesch_kincaid_grade(text)
-            gunning_fog = textstat.gunning_fog(text)
-            smog_index = textstat.smog_index(text)
-            automated_readability_index = textstat.automated_readability_index(text)
-        else:
+            try:
+                flesch_score = textstat.flesch_reading_ease(text)
+                flesch_kincaid_grade = textstat.flesch_kincaid_grade(text)
+                gunning_fog = textstat.gunning_fog(text)
+                smog_index = textstat.smog_index(text)
+                automated_readability_index = textstat.automated_readability_index(text)
+                used_textstat = True
+            except Exception:  # noqa: BLE001 - missing NLTK data / textstat internals
+                used_textstat = False
+
+        if not used_textstat:
             # Fallback implementation (advanced indices need textstat; default to 0.0)
             flesch_score = self._calculate_flesch_score(text, word_count, sentence_count)
             flesch_kincaid_grade = self._calculate_flesch_kincaid_grade(text, word_count, sentence_count)

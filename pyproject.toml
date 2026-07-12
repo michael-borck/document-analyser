@@ -32,6 +32,8 @@ dependencies = [
     # Text extraction
     "pdfplumber>=0.10.3",
     "pypdf>=4.0.0",
+    # Embedded-image extraction (pypdf page.images needs a decoder; renditions)
+    "pillow>=10.0.0",
     "markitdown[docx,pptx,xlsx]>=0.1.0",
     # Slide-design analysis (deck structure that markitdown's text path discards)
     "python-pptx>=0.6.21",

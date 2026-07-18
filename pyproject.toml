@@ -41,6 +41,8 @@ dependencies = [
     "textstat>=0.7.3",
     "nltk>=3.8.0",
     "numpy>=1.24.0",
+    "keyring>=25.7.0",
+    "platformdirs>=4.10.0",
 ]
 
 [project.optional-dependencies]

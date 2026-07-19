@@ -3,9 +3,9 @@
 from typing import Any, Literal
 
 try:
-    from transformers import pipeline
+    from document_analyser.ml.onnx_models import OnnxSentiment
 except ImportError:
-    pipeline = None
+    OnnxSentiment = None
 
 try:
     import nltk
@@ -34,21 +34,11 @@ class GranularSentimentAnalyzer:
         self.model_name = model_name
         self.sentiment_pipeline = None
 
-        if pipeline:
+        if OnnxSentiment:
             try:
-                self.sentiment_pipeline = pipeline(
-                    "sentiment-analysis",
-                    model=model_name,
-                    device=-1,  # CPU for PyInstaller compatibility
-                )
-                # macOS/arm64: from_pretrained hands back mmap-backed safetensors
-                # weight views; torch's GEMM hard-crashes (SIGBUS, exit 138) while
-                # paging them in during the first forward pass. Cloning each
-                # parameter copies the weights onto the heap, which avoids the
-                # fault. (sentence-transformers is unaffected — it materialises
-                # weights differently.) See INTEGRATION-NOTES.md.
-                for param in self.sentiment_pipeline.model.parameters():
-                    param.data = param.data.clone()
+                # ONNX runtime on CPU — no torch, which also retires the macOS/
+                # arm64 safetensors-mmap SIGBUS workaround the torch path needed.
+                self.sentiment_pipeline = OnnxSentiment(model_name)
             except Exception:
                 self.sentiment_pipeline = None
 

@@ -46,14 +46,22 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Heavy ML libs needed by the semantic/sentiment/NER analysers.
-# Optional because (a) the analysers degrade to None gracefully and the rest
-# of the API still works, and (b) loading torch + sentence-transformers +
-# spacy + transformers in one Python process is brittle on macOS.
+# Semantic + sentiment analysers run on ONNX Runtime (torch-free). The MiniLM
+# embeddings and distilbert-sst2 sentiment models are pre-exported ONNX variants
+# loaded via onnxruntime + the Rust `tokenizers` lib — no torch, no transformers,
+# no sentence-transformers (drops ~300-700 MB from a frozen/desktop build).
+# Outputs are identical to the torch models (embeddings cosine 1.0; sentiment
+# labels+scores match). Analysers still degrade to None gracefully if absent.
 nlp = [
-    "sentence-transformers>=2.5.0",
+    "onnxruntime>=1.17.0",
+    "tokenizers>=0.15.0",
+    "huggingface-hub>=0.20.0",
+    "numpy>=1.24.0",
+]
+# spaCy NER (/advanced) — opt-in, not needed by the semantic analysers. Kept
+# separate so `[nlp]` stays lean and torch/transformers-free.
+ner = [
     "spacy>=3.7.0",
-    "transformers>=4.36.0",
 ]
 # Document embedding via the family's shared helper (one pinned model so the
 # vector is comparable across members — for cross-artefact + distinctiveness

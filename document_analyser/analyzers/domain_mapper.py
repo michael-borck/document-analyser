@@ -3,10 +3,10 @@
 from typing import Any, Literal
 
 try:
-    from sentence_transformers import SentenceTransformer
+    from document_analyser.ml.onnx_models import OnnxEmbedder
     import numpy as np
 except ImportError:
-    SentenceTransformer = None
+    OnnxEmbedder = None
     np = None
 
 from document_analyser.models.schemas import DomainMapping, DomainMappingResponse
@@ -21,17 +21,17 @@ class DomainMapper:
         self.model = None
         self._load_error: str | None = None
 
-        if SentenceTransformer is None:
+        if OnnxEmbedder is None:
             self._load_error = (
-                "sentence-transformers is not installed. "
-                "Install with: pip install sentence-transformers"
+                "ONNX embedding backend is unavailable "
+                "(onnxruntime / transformers not installed)."
             )
         else:
             try:
-                self.model = SentenceTransformer(model_name)
+                self.model = OnnxEmbedder(model_name)
             except Exception as e:
                 self._load_error = (
-                    f"Failed to load SentenceTransformer model '{model_name}': {e!s}. "
+                    f"Failed to load ONNX embedding model '{model_name}': {e!s}. "
                     "This usually means missing model files, network issues during first load, "
                     "or memory pressure when many ML libraries are loaded in the same process."
                 )

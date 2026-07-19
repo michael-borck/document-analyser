@@ -19,6 +19,7 @@ from slowapi.util import get_remote_address
 from document_analyser.api.routes import (
     academic_analysis,
     advanced_text,
+    ai_providers,
     analyse,
     future_endpoints,
     images,
@@ -63,6 +64,9 @@ app.include_router(future_endpoints.router, tags=["file-processing"])
 app.include_router(images.router, tags=["file-processing"])
 app.include_router(advanced_text.router, tags=["advanced-text"])
 app.include_router(semantic_analysis.router, prefix="/semantic", tags=["semantic-analysis"])
+# BYOK AI provider management for the desktop host (document-lens) — folded in
+# during the Tauri migration (plan §3.2). Router carries its own /ai prefix.
+app.include_router(ai_providers.router)
 
 
 @app.get("/")

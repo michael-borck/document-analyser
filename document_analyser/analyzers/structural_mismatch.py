@@ -3,10 +3,10 @@
 from typing import Any, Literal
 
 try:
-    from document_analyser.ml.onnx_models import OnnxEmbedder
+    from sentence_transformers import SentenceTransformer
     import numpy as np
 except ImportError:
-    OnnxEmbedder = None
+    SentenceTransformer = None
     np = None
 
 try:
@@ -30,9 +30,9 @@ class StructuralMismatchAnalyzer:
         self.model_name = model_name
         self.model = None
 
-        if OnnxEmbedder:
+        if SentenceTransformer:
             try:
-                self.model = OnnxEmbedder(model_name)
+                self.model = SentenceTransformer(model_name)
             except Exception:
                 self.model = None
 

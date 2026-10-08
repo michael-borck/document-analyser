@@ -146,10 +146,26 @@ class DocumentProcessor:
         if not non_empty_texts:
             raise ValueError("No text could be extracted from PDF")
 
+        # Deterministic layout pass (ADR-0040) -- best-effort and non-fatal:
+        # text extraction has already committed, so a layout failure
+        # degrades to an empty layout rather than failing the document.
+        try:
+            from .layout_pass import run_layout_pass
+
+            layout = run_layout_pass(content, pages, "\n\n".join(non_empty_texts))
+        except Exception as e:  # noqa: BLE001 -- defensive: degrade, don't fail
+            layout = {
+                "headings": [],
+                "pages_scanned": len(pages),
+                "dropped": 0,
+                "layout_error": str(e),
+            }
+
         return {
             "full_text": "\n\n".join(non_empty_texts),
             "pages": pages,
             "total_pages": len(pages),
+            "layout": layout,
         }
 
     def validate_file_size(self, content: bytes, max_size: int) -> bool:

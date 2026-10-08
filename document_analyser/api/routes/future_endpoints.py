@@ -280,6 +280,10 @@ async def analyse_uploaded_files(
                     "full_text": extracted_text_data["full_text"],
                     "pages": extracted_text_data["pages"],
                     "total_pages": extracted_text_data["total_pages"],
+                    # Deterministic layout pass (ADR-0040) -- heading
+                    # candidates aligned to full-text offsets. Absent for
+                    # non-PDF formats; empty on layout failure.
+                    "layout": extracted_text_data.get("layout"),
                 }
 
             file_results.append(file_result)
@@ -658,6 +662,10 @@ async def upload_files_base64(
                     "full_text": extracted_text_data["full_text"],
                     "pages": extracted_text_data["pages"],
                     "total_pages": extracted_text_data["total_pages"],
+                    # Deterministic layout pass (ADR-0040) -- heading
+                    # candidates aligned to full-text offsets. Absent for
+                    # non-PDF formats; empty on layout failure.
+                    "layout": extracted_text_data.get("layout"),
                 }
 
             file_results.append(file_result)
@@ -897,6 +905,10 @@ async def upload_files_by_path(
                     "full_text": extracted_text_data["full_text"],
                     "pages": extracted_text_data["pages"],
                     "total_pages": extracted_text_data["total_pages"],
+                    # Deterministic layout pass (ADR-0040) -- heading
+                    # candidates aligned to full-text offsets. Absent for
+                    # non-PDF formats; empty on layout failure.
+                    "layout": extracted_text_data.get("layout"),
                 }
 
             file_results.append(file_result)

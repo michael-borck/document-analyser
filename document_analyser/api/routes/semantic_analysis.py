@@ -7,12 +7,15 @@ from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
+from document_analyser.analyzers.climate_framing import ClimateFramingAnalyzer
 from document_analyser.analyzers.domain_mapper import DomainMapper
 from document_analyser.analyzers.sentiment_analyzer import GranularSentimentAnalyzer
 from document_analyser.analyzers.structural_mismatch import StructuralMismatchAnalyzer
 from document_analyser.core.config import settings
 from document_analyser.models.schemas import (
     DomainMappingResponse,
+    FramingSuggestRequest,
+    FramingSuggestResponse,
     GranularSentimentResponse,
     StructuralMismatchResponse,
 )
@@ -29,6 +32,7 @@ limiter = Limiter(key_func=get_remote_address)
 domain_mapper = DomainMapper()
 mismatch_analyzer = StructuralMismatchAnalyzer()
 sentiment_analyzer = GranularSentimentAnalyzer()
+climate_framing = ClimateFramingAnalyzer()
 
 
 # ===== Request Models =====
@@ -308,3 +312,14 @@ async def find_similar_terms(
             status_code=500,
             detail=f"Similar-terms ranking failed: {e!s}"
         ) from e
+
+
+@router.post("/framing-suggest", response_model=FramingSuggestResponse)
+async def framing_suggest(req: FramingSuggestRequest) -> FramingSuggestResponse:
+    """ClimateBERT framing suggestions per passage (ADR-0039, ML rung).
+
+    Never records codes: returns per-passage suggestions the app renders
+    as flagged chips for human confirm/dismiss. Degrades to
+    available=false when the optional [nlp] stack is missing.
+    """
+    return climate_framing.suggest_batch(req.passages)

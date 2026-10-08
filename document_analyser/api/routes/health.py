@@ -33,11 +33,25 @@ def _embedding_model_state() -> tuple[bool, str | None]:
     return domain_mapper.model is not None, domain_mapper._load_error
 
 
+def _climate_framing_state() -> tuple[bool, str | None]:
+    """Report whether the ClimateBERT framing models loaded (ADR-0039).
+
+    Optional [nlp] extras — unavailable is a normal state, reported not
+    raised (the app degrades to the deterministic framing rules).
+    """
+    try:
+        from document_analyser.analyzers.climate_framing import climate_framing
+    except Exception as e:  # noqa: BLE001 - import-time failure is itself the signal
+        return False, f"climate framing stack unavailable: {e}"
+    return climate_framing.available, climate_framing.load_error
+
+
 @router.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
     """Health check endpoint"""
     uptime = time.time() - START_TIME
     model_loaded, model_error = _embedding_model_state()
+    climate_loaded, climate_error = _climate_framing_state()
 
     return HealthResponse(
         status="ok",
@@ -45,4 +59,6 @@ async def health_check() -> HealthResponse:
         uptime=uptime,
         embedding_model_loaded=model_loaded,
         embedding_model_error=model_error,
+        climate_framing_loaded=climate_loaded,
+        climate_framing_error=climate_error,
     )

@@ -229,6 +229,37 @@ class HealthResponse(BaseModel):
     # instead of reporting every document as a generic failure.
     embedding_model_loaded: bool = True
     embedding_model_error: str | None = None
+    # ClimateBERT framing models (ADR-0039): optional [nlp] extras, loaded
+    # lazily on first use. Surface availability so the app can tell the
+    # researcher why framing suggestions are model-free.
+    climate_framing_loaded: bool = False
+    climate_framing_error: str | None = None
+
+
+class FramingSuggestRequest(BaseModel):
+    """Sentence-grain passages to classify with the ClimateBERT stack.
+
+    The app sends each keyword mention's sentence window; the backend
+    never sees the document, only the passages.
+    """
+
+    passages: list[str] = Field(min_length=1, max_length=200)
+
+
+class FramingSuggestionResult(BaseModel):
+    climate: bool = False
+    commitment: bool = False
+    target: str = "none"
+    target_score: float = 0.0
+    framing_value: str | None = None
+    model_revision: str | None = None
+
+
+class FramingSuggestResponse(BaseModel):
+    available: bool
+    error: str | None = None
+    models: dict[str, str] = {}
+    results: list[FramingSuggestionResult | None]
 
 
 class ErrorResponse(BaseModel):

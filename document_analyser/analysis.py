@@ -66,6 +66,18 @@ def analyse_document(path: str | Path) -> dict:
     except Exception as e:  # noqa: BLE001 - surfaced as a soft field, never fatal
         result["ai_tells_error"] = str(e)
 
+    # Additive: report-structure signals (heading-detected sections, canonical
+    # coverage, curated keyword lexicon) — presence/emphasis anchors, never
+    # quality judgements.
+    try:
+        from .analyzers.sections import SectionsAnalyzer
+
+        sections_analyser = SectionsAnalyzer()
+        result["sections"] = sections_analyser.analyze(text)
+        result["keywords"] = sections_analyser.keyword_counts(text)
+    except Exception as e:  # noqa: BLE001 - surfaced as a soft field, never fatal
+        result["sections_error"] = str(e)
+
     # Additive: .pptx gets a slide-design block on top of prose/readability.
     if suffix == ".pptx":
         try:

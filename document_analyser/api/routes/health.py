@@ -46,6 +46,22 @@ def _climate_framing_state() -> tuple[bool, str | None]:
     return climate_framing.available, climate_framing.load_error
 
 
+def _suggestion_capability_state() -> tuple[str, str, str | None]:
+    """(lens domain, loaded models, why this lens gets no suggestions).
+
+    ADR-0043. The lens declares its own suggestion models; the health surface
+    reports the correspondence, so a researcher can learn whose models proposed
+    a value instead of inferring it from the absence of a warning.
+    """
+    try:
+        from document_analyser.analyzers.lens_capability import capability_state, climate_capability
+    except Exception as e:  # noqa: BLE001 - import-time failure is itself the signal
+        return "", "", f"suggestion capability unavailable: {e}"
+    cap = climate_capability()
+    usable, reason = capability_state(cap)
+    return cap.domain, (cap.model_summary if usable else ""), (None if usable else reason)
+
+
 @router.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
     """Health check endpoint"""
@@ -53,6 +69,7 @@ async def health_check() -> HealthResponse:
     model_loaded, model_error = _embedding_model_state()
     climate_loaded, climate_error = _climate_framing_state()
 
+    lens_domain, models, refusal = _suggestion_capability_state()
     return HealthResponse(
         status="ok",
         version=_VERSION,
@@ -61,4 +78,7 @@ async def health_check() -> HealthResponse:
         embedding_model_error=model_error,
         climate_framing_loaded=climate_loaded,
         climate_framing_error=climate_error,
+        lens_domain=lens_domain,
+        suggestion_models=models,
+        suggestion_refusal=refusal,
     )

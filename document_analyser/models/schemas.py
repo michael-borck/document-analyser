@@ -234,6 +234,14 @@ class HealthResponse(BaseModel):
     # researcher why framing suggestions are model-free.
     climate_framing_loaded: bool = False
     climate_framing_error: str | None = None
+    # Lens-declared suggestion models (ADR-0043). The lens supplies a
+    # capability block; a domain that does not match the loaded models yields
+    # silence rather than suggestions. `suggestion_refusal` is why a lens got
+    # none, so an absent suggestion can be explained rather than only observed,
+    # and `lens_domain` is the tag the app has open.
+    lens_domain: str = ""
+    suggestion_models: str = ""
+    suggestion_refusal: str | None = None
 
 
 class FramingSuggestRequest(BaseModel):

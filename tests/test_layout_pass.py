@@ -12,8 +12,13 @@ from document_analyser.services.document_processor import DocumentProcessor
 from document_analyser.services.layout_pass import (
     align_heading,
     align_headings_to_pages,
+    align_paragraph_blocks,
+    block_text,
     normalise_with_map,
+    printed_page_for,
+    printed_page_map,
     run_layout_pass,
+    run_paragraph_pass,
 )
 
 
@@ -145,3 +150,81 @@ def _run(processor: DocumentProcessor, content: bytes) -> dict:
     return asyncio.run(
         processor.extract_text_with_pages(content, "application/pdf", "fixture.pdf")
     )
+
+
+# ---------------------------------------------------------------------------
+# Paragraph blocks (the coding sheet's unit)
+# ---------------------------------------------------------------------------
+
+
+def test_block_text_heals_line_end_hyphenation():
+    assert block_text("cli-\nmate action") == "climate action"
+    assert block_text("two\nseparate lines") == "two separate lines"
+
+
+def test_align_paragraph_blocks_tolerates_punctuation_and_spacing():
+    text = (
+        "Monash University annual report\n\n"
+        "The climate strategy targets net zero by 2035.\n"
+        "Water use fell 12 per cent."
+    )
+    pages = [{"page_number": 1, "text": text}]
+    blocks = [
+        {"page_number": 1, "text": "Monash University annual report"},
+        {"page_number": 1, "text": "The climate strategy targets net zero by 2035."},
+        {"page_number": 1, "text": "Water use fell 12 per cent."},
+    ]
+    aligned, dropped = align_paragraph_blocks(blocks, pages, text)
+    assert dropped == 0
+    assert [a["text"] for a in aligned] == [b["text"] for b in blocks]
+    starts = [a["start_offset"] for a in aligned]
+    assert starts == sorted(starts)
+    assert text[starts[1] :].startswith("The climate")
+
+
+def test_align_paragraph_blocks_drops_a_block_absent_from_the_text():
+    text = "Only this text is present."
+    pages = [{"page_number": 1, "text": text}]
+    aligned, dropped = align_paragraph_blocks(
+        [{"page_number": 1, "text": "A passage that is not in the text at all"}],
+        pages,
+        text,
+    )
+    assert aligned == []
+    assert dropped == 1
+
+
+def test_paragraph_pass_on_a_real_pdf_is_ordered_and_complete():
+    content = make_fixture_pdf()
+    result = _run(DocumentProcessor(), content)
+    paragraph_pass = run_paragraph_pass(content, result["pages"], result["full_text"])
+    assert paragraph_pass.get("paragraph_error") is None
+    texts = " ".join(p["text"] for p in paragraph_pass["paragraphs"])
+    assert "renewable energy" in texts
+    assert "Water conservation" in texts
+    starts = [p["start_offset"] for p in paragraph_pass["paragraphs"]]
+    assert starts == sorted(starts)
+
+
+def test_printed_page_map_falls_back_without_labels():
+    content = make_fixture_pdf()
+    page_map = printed_page_map(content)
+    assert [p["pdf_page"] for p in page_map] == [1, 2]
+    assert [p["printed_page"] for p in page_map] == [1, 2]
+    assert all(p["source"] == "fallback" for p in page_map)
+
+
+def test_printed_page_for_reads_labels_not_a_fixed_offset():
+    # ANU's own labels: roman front matter, then arabic two behind the PDF page.
+    assert printed_page_for("1", True, 3) == 1
+    assert printed_page_for("246", True, 248) == 246
+    # Non-numeric labels are blank, never coerced or guessed.
+    assert printed_page_for("ii", True, 2) is None
+    assert printed_page_for("A-1", True, 9) is None
+    assert (
+        printed_page_for("²", True, 9) is None
+    )  # superscript: isdigit() is true, int() throws
+    assert printed_page_for(None, True, 4) is None
+    # No declared labels: the PDF page is the fallback.
+    assert printed_page_for(None, False, 7) == 7
+    assert printed_page_for("x", False, 7) == 7

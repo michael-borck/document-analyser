@@ -26,6 +26,7 @@ the PDF.
 from __future__ import annotations
 
 import re
+from collections import defaultdict
 from typing import Any
 
 # A heading candidate must be at least this many times the page's median
@@ -285,3 +286,236 @@ def run_layout_pass(
         "pages_scanned": len(pages),
         "dropped": dropped,
     }
+
+
+# ---------------------------------------------------------------------------
+# Paragraph blocks: the coding sheet's unit
+# ---------------------------------------------------------------------------
+# One row per paragraph per SDG. Blank-line splitting cannot find paragraphs in
+# pypdf text (PDFs rarely emit blank lines), and it drops short table lines. So
+# paragraphs come from page geometry (PyMuPDF text blocks) and are anchored
+# into the canonical pypdf text by token sequence, which survives the spacing
+# and hyphenation differences the two extractors produce. A block whose tokens
+# cannot be found is dropped and counted, never guessed (ADR-0026).
+
+_TOKEN_RE = re.compile(r"[A-Za-z0-9]+")
+_ANCHOR_SIZES = (12, 8, 5)
+
+
+def block_text(raw: str) -> str:
+    """Join a block's lines into one paragraph, healing line-end hyphenation."""
+    lines = [line.strip() for line in raw.split("\n") if line.strip()]
+    out = ""
+    for line in lines:
+        if out.endswith("-") and line[:1].islower():
+            out = out[:-1] + line
+        else:
+            out = (out + " " + line).strip()
+    return out
+
+
+def _tokens(text: str) -> list[tuple[str, int, int]]:
+    return [(m.group(0).lower(), m.start(), m.end()) for m in _TOKEN_RE.finditer(text)]
+
+
+def extract_paragraph_candidates(pdf_bytes: bytes) -> list[dict[str, Any]]:
+    """One candidate per text block, in page order, with its page number."""
+    import fitz  # PyMuPDF — imported here so the module imports without it
+
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    try:
+        candidates: list[dict[str, Any]] = []
+        for page_number, page in enumerate(doc, start=1):
+            for block in page.get_text("blocks"):
+                if block[6] != 0:  # 1 = image block
+                    continue
+                text = block_text(block[4])
+                if not _tokens(text):
+                    continue
+                candidates.append({"page_number": page_number, "text": text})
+        return candidates
+    finally:
+        doc.close()
+
+
+def _find_token_run(
+    tokens: list[tuple[str, int, int]],
+    index: dict[tuple[str, str, str], list[int]],
+    needle: list[str],
+    start: int,
+) -> int:
+    """First position at or after `start` where `needle` occurs."""
+    size = len(needle)
+    if size < 3:
+        for i in range(start, len(tokens) - size + 1):
+            if [t[0] for t in tokens[i : i + size]] == needle:
+                return i
+        return -1
+    for i in index.get((needle[0], needle[1], needle[2]), []):
+        if i < start:
+            continue
+        if [t[0] for t in tokens[i : i + size]] == needle:
+            return i
+    return -1
+
+
+def align_paragraph_blocks(
+    blocks: list[dict[str, Any]],
+    pages: list[dict[str, Any]],
+    full_text: str,
+) -> tuple[list[dict[str, Any]], int]:
+    """Anchor blocks into full-text offsets by order-preserving token search.
+
+    Returns (paragraphs, dropped). Each paragraph carries `page_number`,
+    `start_offset` and its own text. Paragraph extents are [start, next start),
+    so every keyword span lands in exactly one paragraph: no gaps for the
+    export to fall through.
+    """
+    page_offsets: dict[int, int] = {}
+    cursor = 0
+    non_empty = [p for p in pages if (p.get("text") or "").strip()]
+    for i, p in enumerate(non_empty):
+        page_offsets[p["page_number"]] = cursor
+        cursor += len(p["text"]) + (2 if i < len(non_empty) - 1 else 0)
+
+    prepared: dict[
+        int, tuple[list[tuple[str, int, int]], dict[tuple[str, str, str], list[int]]]
+    ] = {}
+    for p in non_empty:
+        tokens = _tokens(p["text"])
+        index: dict[tuple[str, str, str], list[int]] = defaultdict(list)
+        for i in range(len(tokens) - 2):
+            index[(tokens[i][0], tokens[i + 1][0], tokens[i + 2][0])].append(i)
+        prepared[p["page_number"]] = (tokens, index)
+
+    by_page: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for b in blocks:
+        by_page[b["page_number"]].append(b)
+
+    aligned: list[dict[str, Any]] = []
+    dropped = 0
+    for page_number in sorted(by_page):
+        page = prepared.get(page_number)
+        base = page_offsets.get(page_number)
+        if page is None or base is None:
+            dropped += len(by_page[page_number])
+            continue
+        tokens, index = page
+        search_from = 0
+        for b in by_page[page_number]:
+            words = [t[0] for t in _tokens(b["text"])]
+            hit = -1
+            for size in _ANCHOR_SIZES:
+                if len(words) < size:
+                    continue
+                hit = _find_token_run(tokens, index, words[:size], search_from)
+                if hit >= 0:
+                    break
+            if hit < 0 and len(words) < _ANCHOR_SIZES[-1]:
+                hit = _find_token_run(tokens, index, words, search_from)
+            if hit < 0:
+                dropped += 1
+                continue
+            search_from = hit
+            aligned.append(
+                {
+                    "page_number": page_number,
+                    "start_offset": base + tokens[hit][1],
+                    "text": b["text"],
+                }
+            )
+
+    aligned.sort(key=lambda p: p["start_offset"])
+    return aligned, dropped
+
+
+def run_paragraph_pass(
+    pdf_bytes: bytes,
+    pages: list[dict[str, Any]],
+    full_text: str,
+) -> dict[str, Any]:
+    """Paragraph pass: candidates -> alignment. Non-fatal, like the layout pass."""
+    try:
+        candidates = extract_paragraph_candidates(pdf_bytes)
+    except Exception as e:  # noqa: BLE001 — degrade, don't fail
+        return {"paragraphs": [], "aligned": 0, "dropped": 0, "paragraph_error": str(e)}
+    try:
+        aligned, dropped = align_paragraph_blocks(candidates, pages, full_text)
+    except Exception as e:  # noqa: BLE001
+        return {
+            "paragraphs": [],
+            "aligned": 0,
+            "dropped": len(candidates),
+            "paragraph_error": str(e),
+        }
+    return {"paragraphs": aligned, "aligned": len(aligned), "dropped": dropped}
+
+
+_ASCII_NUMBER = re.compile(r"[0-9]+")
+
+
+def printed_page_for(label: str | None, has_labels: bool, pdf_page: int) -> int | None:
+    """Printed page number for one page, from the PDF's own label.
+
+    No offset is assumed and no university is known: a PDF that declares page
+    labels gets them read per page (so roman front matter and restarted
+    numbering both work), and a PDF that declares none falls back to its PDF
+    page. Labels that are not plain ASCII digits are blank, not guessed.
+    """
+    if not has_labels:
+        return pdf_page
+    if label is None:
+        return None
+    text = label.strip()
+    return int(text) if _ASCII_NUMBER.fullmatch(text) else None
+
+
+def printed_page_map(pdf_bytes: bytes) -> list[dict[str, Any]]:
+    """PDF page -> printed page, from the PDF's own page labels.
+
+    A PDF either declares page labels (roman front matter, then arabic) or it
+    does not. When it does not, the printed page falls back to the PDF page and
+    the fallback is marked, so a landscape report or an unnumbered report shows
+    up in the page map rather than quietly shifting citations.
+    """
+    import io
+
+    import fitz
+    from pypdf import PdfReader
+
+    reader = PdfReader(io.BytesIO(pdf_bytes))
+    has_labels = False
+    try:
+        root = reader.trailer.get("/Root") or {}
+        has_labels = "/PageLabels" in root
+    except Exception:  # noqa: BLE001 — a broken catalog degrades to fallback
+        has_labels = False
+
+    labels: list[str] = []
+    if has_labels:
+        try:
+            labels = [str(label) for label in reader.page_labels]
+        except Exception:  # noqa: BLE001
+            has_labels = False
+
+    rotations: list[int] = []
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    try:
+        rotations = [int(page.rotation) for page in doc]
+    finally:
+        doc.close()
+
+    page_map: list[dict[str, Any]] = []
+    for index in range(len(reader.pages)):
+        label = labels[index] if index < len(labels) else None
+        printed = printed_page_for(label, has_labels, index + 1)
+        page_map.append(
+            {
+                "pdf_page": index + 1,
+                "printed_page": printed,
+                "label": label,
+                "rotation": rotations[index] if index < len(rotations) else 0,
+                "source": "labels" if has_labels else "fallback",
+            }
+        )
+    return page_map

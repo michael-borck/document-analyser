@@ -21,6 +21,7 @@ from document_analyser.api.routes import (
     advanced_text,
     ai_providers,
     analyse,
+    coding_sheet,
     future_endpoints,
     images,
     semantic_analysis,
@@ -61,6 +62,7 @@ app.include_router(analyse.router, tags=["analyse"])
 app.include_router(text_analysis.router, tags=["text-analysis"])
 app.include_router(academic_analysis.router, tags=["academic-analysis"])
 app.include_router(future_endpoints.router, tags=["file-processing"])
+app.include_router(coding_sheet.router, tags=["coding-sheet"])
 app.include_router(images.router, tags=["file-processing"])
 app.include_router(advanced_text.router, tags=["advanced-text"])
 app.include_router(semantic_analysis.router, prefix="/semantic", tags=["semantic-analysis"])

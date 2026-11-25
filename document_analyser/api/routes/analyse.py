@@ -1,6 +1,5 @@
 """Family-pattern /analyse endpoint — mirrors CLI output for single-file analysis."""
 
-import tempfile
 from pathlib import Path
 from typing import Any
 

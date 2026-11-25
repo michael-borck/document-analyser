@@ -64,6 +64,7 @@ embeddings = [
     "lens-embed[text]>=0.1.1",
 ]
 dev = [
+    "ruff>=0.14.4,<0.15",  # the 0.14 rules; 0.17 flags 100+ pre-existing issues (separate cleanup)
     "pytest>=8.3.0",
     "pytest-cov>=5.0.0",
     "httpx>=0.26.0",

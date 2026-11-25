@@ -1,6 +1,6 @@
 """Granular sentiment analyzer for multi-level sentiment analysis."""
 
-from typing import Any, Literal
+from typing import Literal
 
 try:
     from transformers import pipeline

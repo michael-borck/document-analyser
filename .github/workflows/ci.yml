@@ -1,0 +1,27 @@
+name: CI
+
+# Shared gate: michael-borck/app-hq/.github/workflows/ci-python.yml
+#
+# `--no-sources` makes uv resolve lens-contract from PyPI instead of the
+# sibling checkout that [tool.uv.sources] points at locally (CI has no sibling).
+# Formatting is not yet clean across the repo; a formatting-only PR enables the
+# format check. Until then the gate is lint plus tests.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    uses: michael-borck/app-hq/.github/workflows/ci-python.yml@main
+    with:
+      python-versions: '["3.11", "3.12"]'
+      install-command: "uv pip install -e '.[dev]' --no-sources"
+      format-command: "true"

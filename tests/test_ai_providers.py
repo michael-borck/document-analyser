@@ -1,18 +1,29 @@
 """Tests for the BYOK AI provider fold (document-lens Tauri migration §3.2).
 
 Covers the store round-trip and the /ai/* routes. Keys use the plaintext
-fallback here because the test environment forces the null keyring backend
-(PYTHON_KEYRING_BACKEND) — the same code path a keyring-less host would take.
-Each test isolates the on-disk config so the developer's real config is never
-touched.
+fallback here because the fixture below forces the null keyring backend, the
+same code path a keyring-less host takes. That keeps the tests identical on
+macOS (real keychain) and on a headless Linux CI runner (no backend). Each test
+isolates the on-disk config so the developer's real config is never touched.
 """
 
 from pathlib import Path
 
+import keyring
 import pytest
 from fastapi.testclient import TestClient
+from keyring.backends.null import Keyring as NullKeyring
 
 from document_analyser.ai import store
+
+
+@pytest.fixture(autouse=True)
+def null_keyring():
+    """Force the keyring-less path, whatever the host provides."""
+    previous = keyring.get_keyring()
+    keyring.set_keyring(NullKeyring())
+    yield
+    keyring.set_keyring(previous)
 
 
 @pytest.fixture(autouse=True)

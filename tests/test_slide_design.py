@@ -12,8 +12,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+from typing import TYPE_CHECKING
+
 import pytest
 from fastapi.testclient import TestClient
+
+if TYPE_CHECKING:
+    from pptx import Presentation
 
 from document_analyser.analyzers.slide_design import (
     SlideAnalysisError,
@@ -33,7 +38,6 @@ def _save_deck(prs, tmp_path: Path, name: str = "deck.pptx") -> Path:
 
 def _basic_deck() -> "Presentation":
     from pptx import Presentation
-    from pptx.util import Inches
 
     prs = Presentation()
     # Slide 1 — title slide

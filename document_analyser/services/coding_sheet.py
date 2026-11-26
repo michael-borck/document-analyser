@@ -17,6 +17,7 @@ Safety properties, in order of importance:
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -96,7 +97,18 @@ def _validate(profile: Profile) -> list[tuple[int, CellMapping]]:
     return mapped
 
 
+# XML 1.0 forbids these; openpyxl refuses a cell that contains one. Index pages
+# and table rows from PDFs do contain them, so the writer drops them rather than
+# failing the whole batch.
+_ILLEGAL_XML_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+
+def _clean(value: Any) -> Any:
+    return _ILLEGAL_XML_CHARS.sub("", value) if isinstance(value, str) else value
+
+
 def _write(sheet: Any, row: int, column: int, value: Any) -> None:
+    value = _clean(value)
     cell = sheet.cell(row=row, column=column)
     cell.value = value
     # A passage or keyword list that begins with "=" is text, not a formula.

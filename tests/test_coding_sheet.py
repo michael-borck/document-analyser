@@ -315,3 +315,21 @@ def test_build_endpoint_rejects_a_bad_profile(tmp_path):
         },
     )
     assert response.status_code == 400
+
+
+def test_strips_control_characters_from_text(tmp_path):
+    template = _template(tmp_path / "template.xlsx")
+    out = tmp_path / "out"
+    out.mkdir()
+    rows = _rows()
+    rows[0]["passage"] = "Audit\x08 and assurance\x0b 113, 130"
+    build_workbooks(
+        template_path=template,
+        output_dir=out,
+        profile=_profile(),
+        rows=rows,
+        copies=[CopySpec(coder="X", filename="x.xlsx")],
+        engine_version="9.9.9",
+    )
+    sheet = load_workbook(out / "x.xlsx")["Coding sheet"]
+    assert sheet["I5"].value == "Audit and assurance 113, 130"
